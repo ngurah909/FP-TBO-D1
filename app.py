@@ -82,7 +82,7 @@ def get_set_of_production():
 def get_raw_set_of_production():
     global RESULT
     RESULT.clear()
-    f = open("./set_of_production.txt", "r", encoding="utf-8")
+    f = open("./rules_cfg.txt", "r", encoding="utf-8")
     for lines in f:
         line = lines.splitlines()
         line = line[0].split(" -> ")
@@ -269,30 +269,9 @@ def search_left(listVar, checkPos, curPost, posX, posY, limit, prodRules):
 
 def get_parse_tree(inputString):
     if is_accepted(inputString):
-        global TRIANGULAR_TABLE
-        global PARSE_TREE
-        global PREV_NODE
-
-        PARSE_TREE = graphviz.Graph("G", strict=True)
-        PARSE_TREE.attr("node", shape="circle")
-        PARSE_TREE.node("K")
-
-        prodRules = get_raw_set_of_production()
-        inputString = inputString.lower().split(" ")
-
-        for i in range(1, len(inputString)+1):
-            baseList = TRIANGULAR_TABLE[(i, i)]
-            childNode = str(inputString[i-1] + " (" + str(i) + "," + str(i) + ")")
-            parentNode = str(baseList[-1] + " (" + str(i) + "," + str(i) + ")")
-            PARSE_TREE.edge(parentNode, childNode)
-            PREV_NODE = parentNode
-            if (len(baseList) == 1):
-                search_left(baseList, len(baseList)-1, len(baseList)-1, i, i, len(inputString), prodRules)
-            else:
-                search_left(baseList, len(baseList)-2, len(baseList)-1, i, i, len(inputString), prodRules)
-        return PARSE_TREE
+        return True
     else:
-        return None
+        return False
 
 def get_table_element(inputString):
     global TRIANGULAR_TABLE
@@ -311,23 +290,22 @@ def get_table_element(inputString):
     return result
 
 def main():
-    st.title("CFG Parser with Streamlit")
+    st.title("CFG Parser with Streamlit (TBO-D1)")
 
     input_string = st.text_input("Enter a sentence:")
 
     if st.button("Parse"):
-        parse_tree = get_parse_tree(input_string)
-        triangular_table = get_table_element(input_string)
-
-        if parse_tree is not None:
-            st.subheader("Parse Tree:")
-            st.graphviz_chart(parse_tree)
-
-            st.subheader("Triangular Table:")
-            st.table(triangular_table[:-1])  # Display the table without the last row
-
+        is_accepted_result = is_accepted(input_string)
+        triangular_table = get_table_element(input_string)        
+        
+        if is_accepted_result:
+            st.success("The sentence is accepted.")
         else:
             st.error("The sentence is not accepted.")
+        st.subheader("Triangular Table:")
+        st.table(triangular_table[:-1])  # Display the table without the last row
+    else:
+        st.error("The sentence is not accepted.")
 
 if __name__ == "__main__":
     main()
