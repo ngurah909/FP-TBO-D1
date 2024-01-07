@@ -25,7 +25,7 @@ def remove_unit_production(keyList):
 def get_set_of_production():
     global RESULT
     RESULT.clear()
-    f = open("./rules_cfg.txt", "r", encoding="utf-8")
+    f = open("./set_of_production.txt", "r", encoding="utf-8")
     for lines in f:
         line = lines.splitlines()
         line = line[0].split(" -> ")
@@ -82,7 +82,7 @@ def get_set_of_production():
 def get_raw_set_of_production():
     global RESULT
     RESULT.clear()
-    f = open("./rules_cfg.txt", "r", encoding="utf-8")
+    f = open("./set_of_production.txt", "r", encoding="utf-8")
     for lines in f:
         line = lines.splitlines()
         line = line[0].split(" -> ")
@@ -269,9 +269,30 @@ def search_left(listVar, checkPos, curPost, posX, posY, limit, prodRules):
 
 def get_parse_tree(inputString):
     if is_accepted(inputString):
-        return True
+        global TRIANGULAR_TABLE
+        global PARSE_TREE
+        global PREV_NODE
+
+        PARSE_TREE = graphviz.Graph("G", strict=True)
+        PARSE_TREE.attr("node", shape="circle")
+        PARSE_TREE.node("K")
+
+        prodRules = get_raw_set_of_production()
+        inputString = inputString.lower().split(" ")
+
+        for i in range(1, len(inputString)+1):
+            baseList = TRIANGULAR_TABLE[(i, i)]
+            childNode = str(inputString[i-1] + " (" + str(i) + "," + str(i) + ")")
+            parentNode = str(baseList[-1] + " (" + str(i) + "," + str(i) + ")")
+            PARSE_TREE.edge(parentNode, childNode)
+            PREV_NODE = parentNode
+            if (len(baseList) == 1):
+                search_left(baseList, len(baseList)-1, len(baseList)-1, i, i, len(inputString), prodRules)
+            else:
+                search_left(baseList, len(baseList)-2, len(baseList)-1, i, i, len(inputString), prodRules)
+        return PARSE_TREE
     else:
-        return False
+        return None
 
 def get_table_element(inputString):
     global TRIANGULAR_TABLE
@@ -290,22 +311,44 @@ def get_table_element(inputString):
     return result
 
 def main():
-    st.title("CFG Parser with Streamlit (TBO-D1)")
+    st.title("Aplikasi Parsing Kalimat Baku Berbahasa Indonesia")
+    st.markdown("""
+    <div style="text-align: justify;">
+    Aplikasi ini merupakan aplikasi yang digunakan untuk melakukan parsing kalimat berbahasa indonesia dengan pola kalimat sederhana sesuai dengan pedoman Umum Ejaan Bahasa Indonesia (PUEBI) dan Tata Bahasa Baku Bahasa Indonesia Edisi Keempat.
+    </div> <br>
+    """, unsafe_allow_html=True)
 
-    input_string = st.text_input("Enter a sentence:")
+    input_string = st.text_input("Masukan kalimat untuk diparsing:")
 
     if st.button("Parse"):
-        is_accepted_result = is_accepted(input_string)
-        triangular_table = get_table_element(input_string)        
-        
-        if is_accepted_result:
-            st.success("The sentence is accepted.")
+        parse_tree = get_parse_tree(input_string)
+        triangular_table = get_table_element(input_string)
+
+        if parse_tree is not None:
+            #st.subheader("Parse Tree:")
+            #st.graphviz_chart(parse_tree)
+
+            st.markdown(
+            f"""<div style="background-color: #8AFF8A; padding: 10px; border-radius: 10px; text-align: center;">
+            Berdasarkan hasil pemeriksaan, <span style="font-weight: bold;">{input_string}</span><br>
+           <span style="font-weight: bold; color: #07AC17;">VALID</span><br>
+            Sesuai dengan pola dasar bahasa Indonesia
+            </div>""",
+            unsafe_allow_html=True
+            )
+            
+            st.subheader("Triangular Table:")
+            st.table(triangular_table[:-1])  # Display the table without the last row
+
         else:
-            st.error("The sentence is not accepted.")
-        st.subheader("Triangular Table:")
-        st.table(triangular_table[:-1])  # Display the table without the last row
-    else:
-        st.error("The sentence is not accepted.")
+            st.markdown(
+            f"""<div style="background-color: #FF8A8A; padding: 10px; border-radius: 10px; text-align: center;">
+            Berdasarkan hasil pemeriksaan, <span style="font-weight: bold;">{input_string}</span><br>
+           <span style="font-weight: bold; color: #D81717;">TIDAK VALID</span><br>
+            Tidak sesuai dengan pola dasar bahasa Indonesia
+            </div>""",
+            unsafe_allow_html=True
+            )
 
 if __name__ == "__main__":
     main()
